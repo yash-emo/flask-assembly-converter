@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assembly to Machine Code Converter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 40px;
+        }
+        textarea {
+            width: 50%;
+            height: 100px;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 10px;
+            cursor: pointer;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: left;
+            width: 50%;
+            margin: auto;
+            font-size: 16px;
+            white-space: pre-wrap;
+        }
+    </style>
+    <script>
+        async function convertAssembly() {
+            let assemblyCode = document.getElementById("assemblyInput").value;
+
+            let response = await fetch("/execute", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ assembly_code: assemblyCode })
+            });
+
+            let data = await response.json();
+
+            document.getElementById("machineOutput").innerText = "Machine Code:\n" + data.machine_code.join("\n");
+            document.getElementById("registers").innerText = "Registers:\n" + JSON.stringify(data.registers, null, 4);
+            document.getElementById("memory").innerText = "Memory Allocation:\n" + JSON.stringify(data.memory_allocation, null, 4);
+        }
+    </script>
+</head>
+<body>
+    <h2>Assembly to Machine Code Converter</h2>
+    <textarea id="assemblyInput" placeholder="Enter assembly code here..."></textarea>
+    <br>
+    <button onclick="convertAssembly()">Convert</button>
+    <h3>Output:</h3>
+    <pre id="machineOutput"></pre>
+    <h3>Registers:</h3>
+    <pre id="registers"></pre>
+    <h3>Memory Allocation:</h3>
+    <pre id="memory"></pre>
+</body>
+</html>
