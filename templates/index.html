@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,11 +11,17 @@
             text-align: center;
             margin: 40px;
         }
+
         textarea {
             width: 50%;
-            height: 100px;
+            height: 120px;
             font-size: 16px;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            resize: vertical;
         }
+
         button {
             padding: 10px 20px;
             font-size: 16px;
@@ -25,9 +32,11 @@
             border: none;
             border-radius: 5px;
         }
+
         button:hover {
             background-color: #218838;
         }
+
         pre {
             background: #f8f9fa;
             padding: 10px;
@@ -37,36 +46,115 @@
             margin: auto;
             font-size: 16px;
             white-space: pre-wrap;
+            border: 1px solid #ddd;
+            overflow-x: auto;
+        }
+
+        #executionSteps div {
+            background: #f1f1f1;
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 5px;
+            border-left: 5px solid #007bff;
+            text-align: left;
+            width: 50%;
+            margin: auto;
+        }
+
+        .error-message {
+            color: red;
+            font-weight: bold;
         }
     </style>
     <script>
         async function convertAssembly() {
-            let assemblyCode = document.getElementById("assemblyInput").value;
+            let assemblyCode = document.getElementById("assemblyInput").value.trim();
 
-            let response = await fetch("/execute", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ assembly_code: assemblyCode })
-            });
+            if (!assemblyCode) {
+                showError("Please enter assembly code.");
+                return;
+            }
 
-            let data = await response.json();
+            try {
+                let response = await fetch("http://127.0.0.1:5000/execute", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ assembly_code: assemblyCode })
+                });
 
-            document.getElementById("machineOutput").innerText = "Machine Code:\n" + data.machine_code.join("\n");
-            document.getElementById("registers").innerText = "Registers:\n" + JSON.stringify(data.registers, null, 4);
-            document.getElementById("memory").innerText = "Memory Allocation:\n" + JSON.stringify(data.memory_allocation, null, 4);
+                if (!response.ok) {
+                    throw new Error("Server error. Please try again.");
+                }
+
+                let data = await response.json();
+
+                if (!data.execution_steps || data.execution_steps.length === 0) {
+                    throw new Error("Invalid response from the server.");
+                }
+
+                // Update Machine Code Output
+                document.getElementById("machineOutput").innerText = "Machine Code:\n" + data.machine_code.join("\n");
+
+                // Update Registers
+                document.getElementById("registers").innerText = "Registers:\n" + JSON.stringify(data.execution_steps[data.execution_steps.length - 1].registers, null, 4);
+
+                // Update Memory Allocation
+                document.getElementById("memory").innerText = "Memory Allocation:\n" + JSON.stringify(data.execution_steps[data.execution_steps.length - 1].memory, null, 4);
+
+                // Execution Steps Display
+                let stepsHtml = "";
+                data.execution_steps.forEach((step, index) => {
+                    stepsHtml += `
+                        <div>
+                            <strong>Step ${index + 1}:</strong> ${step.instruction}<br>
+                            <strong>Registers:</strong> <pre>${JSON.stringify(step.registers, null, 2)}</pre>
+                            <strong>Flags:</strong> <pre>${JSON.stringify(step.flags, null, 2)}</pre>
+                            <strong>Memory:</strong> <pre>${JSON.stringify(step.memory, null, 2)}</pre>
+                        </div>
+                    `;
+                });
+
+                document.getElementById("executionSteps").innerHTML = stepsHtml;
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        function downloadReport() {
+            let assemblyCode = document.getElementById("assemblyInput").value.trim();
+            let machineCode = document.getElementById("machineOutput").innerText.replace("Machine Code:\n", "").replace(/\n/g, ",");
+
+            if (!assemblyCode || !machineCode.trim()) {
+                showError("Nothing to download. Please enter and execute the assembly code first.");
+                return;
+            }
+
+            let reportUrl = `http://127.0.0.1:5000/download_report?assembly_code=${encodeURIComponent(assemblyCode)}&machine_code=${encodeURIComponent(machineCode)}`;
+            window.location.href = reportUrl;
+        }
+
+        function showError(message) {
+            document.getElementById("errorMessage").innerText = message;
+            setTimeout(() => document.getElementById("errorMessage").innerText = "", 3000);
         }
     </script>
 </head>
+
 <body>
     <h2>Assembly to Machine Code Converter</h2>
+    <p id="errorMessage" class="error-message"></p>
     <textarea id="assemblyInput" placeholder="Enter assembly code here..."></textarea>
     <br>
     <button onclick="convertAssembly()">Convert</button>
+    <button onclick="downloadReport()" style="background-color: #007bff;">Download Report</button>
     <h3>Output:</h3>
     <pre id="machineOutput"></pre>
     <h3>Registers:</h3>
     <pre id="registers"></pre>
     <h3>Memory Allocation:</h3>
     <pre id="memory"></pre>
+    <h3>Execution Steps:</h3>
+    <div id="executionSteps"></div>
 </body>
+
 </html>

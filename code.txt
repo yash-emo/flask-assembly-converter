@@ -1,0 +1,27 @@
+Assembly code:
+MOV A, 5
+MOV B, 10
+ADD A, B
+STORE A, 20
+
+
+Machine Code:
+0001 0101
+0001 1010
+0001 1100
+0011 10100
+
+
+1️⃣ Zero Flag (ZF)
+
+    Indicates whether the result of an operation is zero.
+
+    If the result of an arithmetic/logical operation is 0, ZF is set to 1.
+
+    Otherwise, ZF is 0.
+
+2️⃣ Carry Flag (CF)
+
+    Indicates if a carry (overflow) occurs in arithmetic operations.
+
+    Used when numbers exceed their maximum storage capacity (e.g., in an 8-bit register, if a sum exceeds 255, a carry occurs).
